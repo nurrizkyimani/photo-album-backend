@@ -5,6 +5,10 @@ name = "pypi"
 
 [packages]
 fastapi = {extras = ["all"], version = "*"}
+python-multipart = "*"
+google-cloud-storage = "*"
+sqlalchemy = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 
