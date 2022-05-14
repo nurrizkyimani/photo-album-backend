@@ -43,7 +43,8 @@ async def make_photo_edit():
     # get the docs, in this example is the doc with id
     doc_ref = db.collection(u"photos").document("gpeGwKKB2siJWssDQGko")
     real_doc = doc_ref.get()
-    real_doc_dict = real_doc.to_dict()
+
+    real_doc_dict = {"id": real_doc.id, **real_doc.to_dict()}
 
     # send the data into google pubsub
 
@@ -67,7 +68,7 @@ async def upload_photo():
     """ Upload photo to the gcp bucket """
     bucket_name = "photoalbumsppl"
     source_file_name = "test_img_aot.jpg"
-    destination_blob_name = "photos/{}.jpg".format(source_file_name)
+    destination_blob_name = "photos/{}".format(source_file_name)
 
     # call client bucket gcp
     storage_client = storage.Client()
@@ -113,7 +114,7 @@ async def upvote_photo():
     # get the id of the photo
 
     doc_ref = db.collection(u"photos").document("gpeGwKKB2siJWssDQGko")
-
+    res = doc_ref.update({"vote": firestore.Increment(1)})
     # add the upvoote of the photo
     res = doc_ref.update({"vote": firestore.Increment(1)})
 
