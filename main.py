@@ -1,6 +1,7 @@
-from google.cloud import storage, firestore
+from base64 import encode
+from google.cloud import storage, firestore, pubsub_v1
 from fastapi import FastAPI, status
-
+import json
 from model import Photo
 
 
@@ -41,11 +42,27 @@ async def make_photo_edit():
 
     # get the docs, in this example is the doc with id
     doc_ref = db.collection(u"photos").document("gpeGwKKB2siJWssDQGko")
-    real_doc = doc_ref.get().to_dict()
+    real_doc = doc_ref.get()
+    real_doc_dict = real_doc.to_dict()
 
     # send the data into google pubsub
 
-    return {"success": "true", "data": real_doc}
+    project_id = "genuine-space-349906"
+    topic_name = "photo_edit"
+
+    publisher = pubsub_v1.PublisherClient()
+    topic_path = publisher.topic_path(project_id, topic_name)
+
+    json_ex = json.dumps(real_doc_dict, indent=2).encode('utf-8')
+
+    res_1 = publisher.publish(topic_path, json_ex)
+
+    # res_json_decode = json.loads(json_ex)
+
+    return {
+        "success": "true",
+        "data": real_doc_dict,
+    }
 
 
 @app.get("/upload_photo", status_code=status.HTTP_201_CREATED)
