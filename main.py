@@ -1,8 +1,12 @@
 from base64 import encode
+from PIL import Image
 from google.cloud import storage, firestore, pubsub_v1
 from fastapi import FastAPI, status
 import json
+import io
+import uuid
 from model import Photo
+from urllib.request import urlopen
 
 
 db = firestore.Client(project="genuine-space-349906")
@@ -47,7 +51,6 @@ async def make_photo_edit():
     real_doc_dict = {"id": real_doc.id, **real_doc.to_dict()}
 
     # send the data into google pubsub
-
     project_id = "genuine-space-349906"
     topic_name = "photo_edit"
 
@@ -74,12 +77,6 @@ async def upload_photo():
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
-
-    # add photo to bucket
-    # blob.upload_from_filename(source_file_name)
-
-    # res = "File {} uploaded to {}.".format(
-    #     source_file_name, destination_blob_name)
 
     # testing data
     name = "test_img_aot"
@@ -112,16 +109,14 @@ async def upload_photo():
 async def upvote_photo():
 
     # get the id of the photo
-
     doc_ref = db.collection(u"photos").document("gpeGwKKB2siJWssDQGko")
-    res = doc_ref.update({"vote": firestore.Increment(1)})
     # add the upvoote of the photo
     res = doc_ref.update({"vote": firestore.Increment(1)})
 
     # return success
     return {
         "message": "upvote success",
-        **res.dict()
+        "data": res,
     }
 
 # view top 10 photo with the highest rating route in day
@@ -164,6 +159,43 @@ async def all_photos():
 
 
 # resize the photo with the single click
-@app.get('photo_resize')
+@app.get('/photo_resize')
 async def photo_resize():
-    return {"message": "Photo Resize"}
+
+    example_id_photo = "gpeGwKKB2siJWssDQGko"
+    dest_resize_id = "{}.jpeg".format(uuid.uuid1())
+
+    doc_ref = db.collection(u"photos").document(example_id_photo)
+    doc_dict = doc_ref.get().to_dict()
+
+    image = Image.open(urlopen(doc_dict["url"]))
+    image.thumbnail((150, 150))
+
+    # save the image to byte array
+    bs = io.BytesIO()
+    image.save(bs, "jpeg")
+
+    # upload to gcp bucket.
+    bucket_name = "photoalbumsppl"
+
+    destination_blob_name = "resizes/{}".format(dest_resize_id)
+
+    # call client bucket gcp
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+
+    # add photo to bucket
+    blob.upload_from_string(bs.getvalue(), content_type="image/jpeg")
+
+    # get the doc, in this example is the doc with id
+    doc_ref = db.collection(u"photos").document(example_id_photo)
+
+    # create the url for the thumbnail
+    photo_url = "https://storage.googleapis.com/photoalbumsppl/resizes/{}".format(
+        dest_resize_id)
+
+    # update the database with the new thumbnail
+    doc_ref.update({"square_url": photo_url})
+
+    return {"status": "success", "message": "Photo Resize"}
