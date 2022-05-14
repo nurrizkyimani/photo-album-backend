@@ -54,10 +54,7 @@ async def make_photo_edit():
     topic_path = publisher.topic_path(project_id, topic_name)
 
     json_ex = json.dumps(real_doc_dict, indent=2).encode('utf-8')
-
-    res_1 = publisher.publish(topic_path, json_ex)
-
-    # res_json_decode = json.loads(json_ex)
+    publisher.publish(topic_path, json_ex)
 
     return {
         "success": "true",
