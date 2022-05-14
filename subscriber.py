@@ -15,8 +15,6 @@ subscription_id = "photo_edit-sub"
 timeout = 5.0
 
 
-arr_list = []
-
 db = firestore.Client(project="genuine-space-349906")
 
 
@@ -24,16 +22,13 @@ def thumbnail_maker(url_img):
 
     destination_file_name = "{}.jpeg".format(uuid.uuid1())
     try:
+        # open the image and resize it
         image = Image.open(urlopen(url_img))
         image.thumbnail((90, 90))
 
-        # make it into jpeg format,
-
-        # image.save("test_3.jpg")
-
+        # save the image to byte array
         bs = io.BytesIO()
         image.save(bs, "jpeg")
-        # in_mem_file.seek(0)
 
         # upload to gcp bucket.
         bucket_name = "photoalbumsppl"
@@ -50,6 +45,7 @@ def thumbnail_maker(url_img):
 
         print("inside res", res)
 
+        # return the id of the thumbnail
         return False, destination_file_name
 
     except IOError:
@@ -65,24 +61,24 @@ def callback(message: pubsub_v1.subscriber.message.Message):
     json_res = message.data
     res_json_decode = json.loads(json_res)
 
-    # add to arr list as the result
-    # arr_list.append(res_json_decode)
-    # print(arr_list)
-
+    # run the thumbmail maker
     failed, thumb_id = thumbnail_maker(res_json_decode['url'])
 
+    # if failed, then do not update the database
     if(failed):
         print("failed to create thumbnail")
         return
 
     print("success thumbnail created")
 
-    # print(res_json_decode)
+    # get the doc, in this example is the doc with id
     doc_ref = db.collection(u"photos").document(res_json_decode['id'])
 
-    photo_url = "https://storage.googleapis.com/photoalbumsppl/thumbnails/{}.jpeg".format(
+    # create the url for the thumbnail
+    photo_url = "https://storage.googleapis.com/photoalbumsppl/thumbnails/{}".format(
         thumb_id)
 
+    # update the database with the new thumbnail
     res_up = doc_ref.update({"thumbnail_url": photo_url})
 
     print({"status": "success", "res": res_up})
