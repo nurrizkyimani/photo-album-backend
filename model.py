@@ -16,6 +16,12 @@ class User(BaseModel):
     password: str
 
 
+class Albums(BaseModel):
+    name: str
+    photos: List[Photo]
+    userid: str
+
+
 class Summary(BaseModel):
     top_weekly: List[str] = []
     top_monthly: List[str] = []
