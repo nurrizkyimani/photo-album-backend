@@ -1,33 +1,11 @@
-from google.cloud import storage
-from fastapi import FastAPI
-from sqlalchemy import create_engine, Integer, Column, String, ForeignKey, select, inspect
-from sqlalchemy.orm import declarative_base, Session
+from google.cloud import storage, firestore
+from fastapi import FastAPI, status
 
+from model import Photo
+
+
+db = firestore.Client(project="genuine-space-349906")
 app = FastAPI()
-
-# create a connection between fastapi and gcp bucket
-engine = create_engine(
-    "postgresql://postgres:Denhaag898!@34.132.87.247:5432/postgres", echo=True, future=True)
-
-# Declare the base
-
-Base = declarative_base()
-
-
-class Photo(Base):
-    __tablename__ = "photosdb"
-    id = Column(Integer, primary_key=True)
-    name = Column(String(30))
-    url = Column(String)
-    vote = Column(Integer)
-
-    def as_dict(self):
-        return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
-
-
-# create the table
-Base.metadata.create_all(engine)
-
 # main route
 
 
@@ -55,50 +33,81 @@ async def signin():
 async def user():
     pass
 
-# upload picture route
+# Photos Model
 
 
-@app.get("/upload_photo")
+@app.get('/make_photo_edit')
+async def make_photo_edit():
+
+    # get the docs, in this example is the doc with id
+    doc_ref = db.collection(u"photos").document("gpeGwKKB2siJWssDQGko")
+    real_doc = doc_ref.get().to_dict()
+
+    # send the data into google pubsub
+
+    return {"success": "true", "data": real_doc}
+
+
+@app.get("/upload_photo", status_code=status.HTTP_201_CREATED)
 async def upload_photo():
     """ Upload photo to the gcp bucket """
     bucket_name = "photoalbumsppl"
     source_file_name = "test_img_aot.jpg"
     destination_blob_name = "photos/{}.jpg".format(source_file_name)
 
+    # call client bucket gcp
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
 
+    # add photo to bucket
     # blob.upload_from_filename(source_file_name)
 
-    res = "File {} uploaded to {}.".format(
-        source_file_name, destination_blob_name)
+    # res = "File {} uploaded to {}.".format(
+    #     source_file_name, destination_blob_name)
 
-    # declare_model
+    # testing data
+    name = "test_img_aot"
+    photo_url = "https://storage.googleapis.com/photoalbumsppl/photos/test_img_aot.jpg.jpg"
 
-    photo_1 = Photo(
-        name="test", url="https://storage.googleapis.com/photoalbumsppl/photos/test_img_aot.jpg")
+    new_photo = Photo(url=photo_url,
+                      vote=0,
+                      thumbnail_url=photo_url,
+                      square_url=photo_url,
+                      userid='23123123',
+                      name=name)
 
-    # post the photo with user data to the gcp sql database
-    with Session(engine) as session:
-        session.add(photo_1)
-        session.commit()
+    # add to firestore
+    doc_ref = db.collection(u"photos").document()
+    doc_ref.set({
+        u"url": new_photo.url,
+        u"vote": new_photo.vote,
+        u"thumbnail_url": new_photo.thumbnail_url,
+        u"square_url": new_photo.square_url,
+        u"userid": new_photo.userid,
+        u"name": new_photo.name,
+    })
 
-    return {"message": res}
+    return {"id": doc_ref.id, **new_photo.dict()}
 
 # upvote photo route
 
 
-@app.get("/upvote")
+@app.get("/upvote", status_code=status.HTTP_202_ACCEPTED)
 async def upvote_photo():
 
     # get the id of the photo
 
+    doc_ref = db.collection(u"photos").document("gpeGwKKB2siJWssDQGko")
+
     # add the upvoote of the photo
+    res = doc_ref.update({"vote": firestore.Increment(1)})
 
-    # update it into the photo sql database;
-
-    return {"message": "Upload Picture"}
+    # return success
+    return {
+        "message": "upvote success",
+        **res.dict()
+    }
 
 # view top 10 photo with the highest rating route in day
 
@@ -124,16 +133,19 @@ async def top_10_photo_week():
 # view all photos from original, thumbnail and 1:1 resultion:
 
 
-@app.get('/all_photos')
+@app.get('/all_photos', status_code=status.HTTP_200_OK)
 async def all_photos():
 
-    with Session(engine) as session:
-        stmt = select(Photo)
-        photos_arr = []
-        for photo in session.scalars(stmt):
-            photos_arr.append(photo.as_dict())
+    # get all photos
 
-    return {"message": photos_arr}
+    result = db.collection(u"photos").get()
+    pat_l = []
+    for doc in result:
+        pat_l.append({"id": doc.id, **doc.to_dict()})
+
+    return {
+        "status": "success",
+        "data": pat_l}
 
 
 # resize the photo with the single click

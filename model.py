@@ -1,6 +1,22 @@
+from typing import List
+from pydantic import BaseModel
 
-# db of all photos
 
-# db of all user
+class Photo(BaseModel):
+    url: str
+    name: str
+    vote: int
+    thumbnail_url: str
+    square_url: str
+    userid: str
 
-# db of all of user summarization
+
+class User(BaseModel):
+    username: str
+    password: str
+
+
+class Summary(BaseModel):
+    top_weekly: List[str] = []
+    top_monthly: List[str] = []
+    top_daily: List[str] = []
