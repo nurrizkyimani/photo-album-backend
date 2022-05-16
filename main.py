@@ -119,34 +119,50 @@ async def upvote_photo():
         "data": res,
     }
 
+
+@app.get('/trigger_summarizer')
+async def top_10_photo_day():
+
+    userid_input = 'MsvneGYSHOO0j8HTa6GS'
+
+    doc_ref = db.collection(u"photos").where(
+        u"userid",
+        u"==",
+        userid_input)
+
+    real_doc = doc_ref.get()
+
+    pht_list = []
+
+    for doc in real_doc:
+        pht_list.append(doc.id)
+
+    doc_ref = db.collection(u"summarizations").document("xLcM5cykfr5tp67Lib2M")
+    doc_ref.update({"top10all": pht_list})
+
+    return {
+        "message": "success",
+        "data": pht_list,
+    }
+
+
 # view top 10 photo with the highest rating route in day
 
 
-@app.get('/top_10_photo_day')
+@app.get('/top_10_photos')
 async def top_10_photo_day():
-    return {"message": "Top 10 Photo Day"}
 
-# view top 10 photo with the highest rating route in month
+    doc_ref = db.collection(u"photos").document("xLcM5cykfr5tp67Lib2M")
+    real_doc = doc_ref.get()
+    real_doc_dict = {"id": real_doc.id, **real_doc.to_dict()}
 
-
-@app.get('/top_10_photo_month')
-async def top_10_photo_month():
-    return {"message": "Top 10 Photo Month"}
-
-# view top 10 photo with the highest rating route weekly
-
-
-@app.get('/top_10_photo_week')
-async def top_10_photo_week():
-    return {"message": "Top 10 Photo Week"}
+    return {"status": "success", "data": real_doc_dict}
 
 # view all photos from original, thumbnail and 1:1 resultion:
 
 
 @app.get('/all_photos', status_code=status.HTTP_200_OK)
 async def all_photos():
-
-    # get all photos
 
     result = db.collection(u"photos").get()
     pat_l = []
