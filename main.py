@@ -1,10 +1,23 @@
 from base64 import encode
 from PIL import Image
 from google.cloud import storage, firestore, pubsub_v1
-from fastapi import FastAPI, UploadFile, status
+from fastapi import Body, Depends, FastAPI, UploadFile, status
+from AuthBearer.auth_bearer import JWTBearer
+from AuthBearer.auth_handler import signJWT
+from model import UserLoginSchema, UserSchema
 
 
 from view import get_all_photos, resize_photo, summarization, thumbnail_photo_producer, upload_photo_view, upvote_downvote
+
+
+users = []
+
+
+def check_user(data: UserLoginSchema):
+    for user in users:
+        if user.email == data.email and user.password == data.password:
+            return True
+    return False
 
 
 db = firestore.Client(project="genuine-space-349906")
@@ -17,26 +30,27 @@ async def root():
     return {"message": "Hello World"}
 
 
-# sign up function
-@app.post("/signup")
-async def signup():
-    pass
-
-# sign in function
-
-
-@app.post("/signin")
-async def signin():
-    pass
-
-# get user credential
+@app.post("/user/signup", tags=["user"])
+async def create_user(user: UserSchema = Body(...)):
+    # replace with db call, making sure to hash the password first
+    users.append(user)
+    return signJWT(user.email)
 
 
-@app.get("/user")
-async def user():
-    pass
+@app.post("/user/login", tags=["user"])
+async def user_login(user: UserLoginSchema = Body(...)):
+    if check_user(user):
+        return signJWT(user.email)
+    return {
+        "error": "Wrong login details!"
+    }
 
-# Photos Model
+# test the bearer
+
+
+@app.post("/test", dependencies=[Depends(JWTBearer())])
+async def test():
+    return {"message": "Hello World"}
 
 
 @app.post("/upload_photo", status_code=status.HTTP_201_CREATED)

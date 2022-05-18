@@ -12,6 +12,7 @@ psycopg2-binary = "*"
 google-cloud-firestore = "*"
 google-cloud-pubsub = "*"
 pillow = "*"
+pyjwt = "*"
 
 [dev-packages]
 
