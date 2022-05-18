@@ -1,7 +1,7 @@
 from base64 import encode
 from PIL import Image
 from google.cloud import storage, firestore, pubsub_v1
-from fastapi import FastAPI, status
+from fastapi import FastAPI, UploadFile, status
 import json
 import io
 import uuid
@@ -66,11 +66,16 @@ async def make_photo_edit():
     }
 
 
-@app.get("/upload_photo", status_code=status.HTTP_201_CREATED)
-async def upload_photo():
-    """ Upload photo to the gcp bucket """
+@app.post("/upload_photo", status_code=status.HTTP_201_CREATED)
+async def upload_photo(file: UploadFile):
+
+    if not file:
+        return {"message": "No file sent"}
+
+    print(file.filename)
+
     bucket_name = "photoalbumsppl"
-    source_file_name = "test_img_aot.jpg"
+    source_file_name = file.filename
     destination_blob_name = "photos/{}".format(source_file_name)
 
     # call client bucket gcp
@@ -80,14 +85,15 @@ async def upload_photo():
 
     # testing data
     name = "test_img_aot"
-    photo_url = "https://storage.googleapis.com/photoalbumsppl/photos/test_img_aot.jpg.jpg"
+    photo_url = "https://storage.googleapis.com/photoalbumsppl/{}".format(
+        destination_blob_name)
 
     new_photo = Photo(url=photo_url,
                       vote=0,
                       thumbnail_url=photo_url,
                       square_url=photo_url,
                       userid='23123123',
-                      name=name)
+                      name=source_file_name)
 
     # add to firestore
     doc_ref = db.collection(u"photos").document()
@@ -112,6 +118,21 @@ async def upvote_photo():
     doc_ref = db.collection(u"photos").document("gpeGwKKB2siJWssDQGko")
     # add the upvoote of the photo
     res = doc_ref.update({"vote": firestore.Increment(1)})
+
+    # return success
+    return {
+        "message": "upvote success",
+        "data": res,
+    }
+
+
+@app.get("/downvote", status_code=status.HTTP_202_ACCEPTED)
+async def upvote_photo():
+
+    # get the id of the photo
+    doc_ref = db.collection(u"photos").document("gpeGwKKB2siJWssDQGko")
+    # add the upvoote of the photo
+    res = doc_ref.update({"vote": firestore.Increment(-1)})
 
     # return success
     return {
