@@ -1,6 +1,6 @@
 from base64 import encode
-from PIL import Image
-from google.cloud import storage, firestore, pubsub_v1
+
+from google.cloud import firestore
 from fastapi import Body, Depends, FastAPI, UploadFile, status
 from AuthBearer.auth_bearer import JWTBearer
 from AuthBearer.auth_handler import signJWT
