@@ -9,6 +9,7 @@ import io
 import uuid
 from urllib.request import urlopen
 from PIL import Image
+from base64 import encode
 
 db = firestore.Client(project="genuine-space-349906")
 
