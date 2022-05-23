@@ -67,6 +67,10 @@ jobs:
         cluster_name: ${{ env.GKE_CLUSTER }}
         location: ${{ env.GKE_ZONE }}
 
+    # configure docker
+    - name: Configure Docker
+      run: gcloud auth configure-docker --quiet
+
     # Build the Docker image
     - name: Build
       run: |-
