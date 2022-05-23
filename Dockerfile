@@ -1,4 +1,13 @@
 FROM python:3.9-slim
+
+COPY Pipfile Pipfile.lock ./
+
+RUN pip install --no-cache-dir pipenv && \
+  pipenv install --system --deploy --clear
+
 COPY . .
-RUN pip install -r requirements.txt
-ENTRYPOINT ["python", "-u", "main.py"]
+
+EXPOSE 8080
+
+ENTRYPOINT [ "uvicorn", "main:app", "--reload" ]
+
