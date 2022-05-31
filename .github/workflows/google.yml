@@ -102,4 +102,4 @@ jobs:
     # run the kubectl for gke
     - name : RUN in the GKE with kubectl
       run : |- 
-        kubectl run photoalbum --image=gcr.io/$PROJECT_ID/$IMAGE:latest
+        kubectl run photoalbum2 --image=gcr.io/$PROJECT_ID/$IMAGE:latest
