@@ -118,10 +118,10 @@ async def upload_photo(photofile: UploadFile):
 
     print(photofile.filename)
 
-    # upload the file
-    res_up = upload_photo_view(photofile)
+    # upload the file; WORK
+    res_up = upload_photo_view(photofile, "user1234testing")
 
-    # producer send to create thumbnail
+    # producer send to create thumbnail; WORK
     real_doc_dict = thumbnail_photo_producer(res_up['id'])
 
     return {

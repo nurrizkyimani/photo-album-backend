@@ -113,12 +113,13 @@ def upvote_downvote(incr_vote, photo_id):
     # get the doc, in this example is the photo doc with id
     doc_ref = db.collection(u"photos").document(photo_id)
 
+    print(doc_ref)
+
     # update the database with the new thumbnail
     res_json = doc_ref.update({"vote": firestore.Increment(incr_vote)})
 
     return {"status": "success",
             "message": "Vote updated",
-            "data": res_json
             }
 
 
@@ -146,15 +147,22 @@ def thumbnail_photo_producer(photo_id: int):
 # get
 
 
-def upload_photo_view(file: UploadFile, userid="23123123"):
+def upload_photo_view(file: UploadFile, userid: str):
     bucket_name = "photoalbumsppl"
-    source_file_name = file.filename
-    destination_blob_name = "photos/{}".format(source_file_name)
+    # source_file_name = file.filename
+
+    # get the id from uuid for the resize;
+    dest_resize_id = "{}.jpeg".format(uuid.uuid1())
+
+    destination_blob_name = "photos/{}".format(dest_resize_id)
 
     # call client bucket gcp
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
+
+    # upload the image to the blob based on the name;
+    blob.upload_from_file(file.file)
 
     # testing data
     photo_url = "https://storage.googleapis.com/photoalbumsppl/{}".format(
@@ -163,10 +171,10 @@ def upload_photo_view(file: UploadFile, userid="23123123"):
     # create the model photo
     new_photo = Photo(url=photo_url,
                       vote=0,
-                      thumbnail_url=photo_url,
-                      square_url=photo_url,
+                      thumbnail_url="None",
+                      square_url="None",
                       userid=userid,
-                      name=source_file_name)
+                      name=dest_resize_id)
 
     # add to firestore
     doc_ref = db.collection(u"photos").document()
