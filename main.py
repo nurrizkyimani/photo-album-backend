@@ -109,6 +109,8 @@ async def test():
     3. return true and the data itself, the doc dic
     """
 
+# upload photo; DONE;
+
 
 @app.post("/upload_photo", status_code=status.HTTP_201_CREATED)
 async def upload_photo(photofile: UploadFile):
@@ -168,7 +170,7 @@ async def top_10_photo_day(userid_input: str):
     return res_json
 
 
-# view top 10 photo with the highest rating route in day
+# view top 10 photo with the highest rating route in day; DONE
 @app.get('/top_10_photos/{userid_input}')
 async def top_10_photo_day(userid_input):
 
