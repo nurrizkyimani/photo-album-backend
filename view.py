@@ -13,44 +13,53 @@ from base64 import encode
 
 db = firestore.Client(project="genuine-space-349906")
 
+# get summary of the photo
+
 
 def summarization(userid):
-    # get the docs, in this example is the doc with id
-    doc_ref = db.collection(u"photos").where(
+
+    # get all photo from the same userid
+    pht_list = []
+    real_doc_photo = db.collection(u"photos").where(
         u"userid",
         u"==",
-        userid)
+        userid).stream()
 
-    # list all of the doc into the list;
-    pht_list = []
-    real_doc = doc_ref.get()
-    for doc in real_doc:
+    for doc in real_doc_photo:
         pht_list.append(doc.id)
 
     # check if the summarization is exist; if not then create;
+    doc_id_summary_id = None
+    doc_is_exist = False
     doc_ref_sum = db.collection(u"summarizations").where(
         u"userid",
         u"==",
         userid)
-
-    d = doc_ref_sum.get()
-
-    doc_is_exist = False
+    d = doc_ref_sum.stream()
 
     for doc in d:
-        if doc['userid'] == userid:
+        doc_dic = doc.to_dict()
+
+        if doc_dic['userid'] == userid:
+            doc_id_summary_id = doc.id
             doc_is_exist = True
             break
 
     if doc_is_exist == True:
         # update the data into firestore
-        doc_ref = db.collection(u"summarizations").document(
-            "xLcM5cykfr5tp67Lib2M")
+        doc_ref = db.collection(u"summarizations").document(doc_id_summary_id)
+
         doc_ref.update({"top10all": pht_list})
     else:
         # add the data into firestore
         doc_ref = db.collection(u"summarizations").document()
         doc_ref.set({"userid": userid, "top10all": pht_list})
+
+        summary_id = doc_ref.id
+
+        doc_ref = db.collection(u"users").document(userid)
+
+        doc_ref.update({"summarization": summary_id})
 
     return {
         "message": "success",
@@ -122,6 +131,8 @@ def upvote_downvote(incr_vote, photo_id):
             "message": "Vote updated",
             }
 
+# fetch the date from photo id and send it to the producer
+
 
 def thumbnail_photo_producer(photo_id: int):
     # get the docs, in this example is the doc with id
@@ -144,7 +155,7 @@ def thumbnail_photo_producer(photo_id: int):
 
     return real_doc_dict
 
-# get
+# upload photo to firestore and gcp bucket
 
 
 def upload_photo_view(file: UploadFile, userid: str):
@@ -188,6 +199,8 @@ def upload_photo_view(file: UploadFile, userid: str):
     })
 
     return {"id": doc_ref.id, **new_photo.dict()}
+
+# get the photo from the id
 
 
 def get_all_photos():

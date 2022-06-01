@@ -130,7 +130,7 @@ async def upload_photo(photofile: UploadFile):
     }
 
 
-# upvote photo route
+# upvote photo route; DONE
 @app.get("/upvote/{photo_id}", status_code=status.HTTP_202_ACCEPTED)
 async def upvote_photo(photo_id: str):
 
@@ -141,7 +141,7 @@ async def upvote_photo(photo_id: str):
 
     return res_json
 
-# dowvote the photo route
+# dowvote the photo route; DONE
 
 
 @app.get("/downvote/{photo_id}", status_code=status.HTTP_202_ACCEPTED)
@@ -154,7 +154,7 @@ async def downvote_photo(photo_id: str):
 
     return res_json
 
-# triggler summary
+# triggler summary; DONE
 
 
 @app.get('/trigger_summarizer/{userid_input}')
@@ -169,14 +169,34 @@ async def top_10_photo_day(userid_input: str):
 
 
 # view top 10 photo with the highest rating route in day
-@app.get('/top_10_photos')
-async def top_10_photo_day():
+@app.get('/top_10_photos/{userid_input}')
+async def top_10_photo_day(userid_input):
 
-    doc_ref = db.collection(u"photos").document("xLcM5cykfr5tp67Lib2M")
+    # get the user docs from the id;
+    doc_ref = db.collection(u"users").document(userid_input)
     real_doc = doc_ref.get()
-    real_doc_dict = {"id": real_doc.id, **real_doc.to_dict()}
+    doc_user = real_doc.to_dict()
 
-    return {"status": "success", "data": real_doc_dict}
+    # from the user doc, we get the id of the summarization, and list all of the id photo
+    doc_ref_sum = db.collection(u"summarizations").document(
+        doc_user['summarization'])
+    doc_ref_dict = doc_ref_sum.get()
+    res = doc_ref_dict.to_dict()
+
+    list_fetch_photo = []
+    for top in res['top10all']:
+        list_fetch_photo.append(top)
+
+    # fetch all the photo from the list of id list
+    doc_ref_sum = db.collection(u"photos").where(
+        u'__name__', u'in', list_fetch_photo).stream()
+
+    list_res_photo = []
+    for d in doc_ref_sum:
+        list_res_photo.append(d.to_dict())
+
+    # return the status and the data
+    return {"status": "success", "data": list_res_photo}
 
 # view all photos from original, thumbnail and 1:1 resultion:
 
@@ -188,8 +208,19 @@ async def all_photos():
     return res_json
 
 
-# resize the photo with the single click, manual
+# resize the photo with the single click, manual; DONE
 @app.get("/photo_resize/{photo_id}")
 async def photo_resize(photo_id):
     res_json = resize_photo(photo_id)
     return res_json
+
+
+# view top 10 photo with the highest rating route in day; DONE
+@app.get('/get_photo_by_id/{photo_id}')
+async def top_10_photo_day(photo_id):
+
+    doc_ref = db.collection(u"photos").document(photo_id)
+    real_doc = doc_ref.get()
+    real_doc_dict = {"id": real_doc.id, **real_doc.to_dict()}
+
+    return {"status": "success", "data": real_doc_dict}
