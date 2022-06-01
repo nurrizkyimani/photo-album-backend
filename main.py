@@ -14,9 +14,20 @@ users = []
 
 
 def check_user(data: UserLoginSchema):
-    for user in users:
-        if user.email == data.email and user.password == data.password:
+
+    doc_exist = db.collection(u"users").where(
+        u"email",
+        u"==",
+        data.email).stream()
+
+    for doc in doc_exist:
+        doc_user = doc.to_dict()
+        if doc_user["email"] == data.email and doc_user["password"] == data.password:
             return True
+    # for user in users:
+    #     if user.email == data.email and user.password == data.password:
+    #         return True
+
     return False
 
 
@@ -35,7 +46,41 @@ async def root():
 @app.post("/user/signup", tags=["user"])
 async def create_user(user: UserSchema = Body(...)):
     # replace with db call, making sure to hash the password first
-    users.append(user)
+
+    # create new user model
+    new_user = UserSchema(fullname=user.fullname,
+                          email=user.email,
+                          password=user.password)
+
+    # fetch if email exist
+    doc_exist = db.collection(u"users").where(
+        u"email",
+        u"==",
+        new_user.email).stream()
+
+    doc_is_exist = False
+
+    # loop int the docs if doc exist then doc_is_exist = True
+    for doc in doc_exist:
+        # print(doc.to_dict())
+        if doc.exists:
+            doc_is_exist = True
+            break
+
+    # if exist , we dotn send access token
+    if doc_is_exist:
+        return {
+            "access_token": None,
+            "message": "User already exist"}
+    # else we ad into the collection and send to the document
+    else:
+        doc_ref = db.collection(u"users").document()
+        doc_ref.set({
+            u'fullname': new_user.fullname,
+            u'email': new_user.email,
+            u'password': new_user.password,
+        })
+
     return signJWT(user.email)
 
 
@@ -45,6 +90,7 @@ async def user_login(user: UserLoginSchema = Body(...)):
     if check_user(user):
         return signJWT(user.email)
     return {
+        "access_token": None,
         "error": "Wrong login details!"
     }
 
@@ -56,7 +102,14 @@ async def test():
     return {"message": "Hello World test bearer"}
 
 
-# upload photo
+# upload photo,
+    """
+    1. upload photo to the bucket
+    2. create thumbnail by sendign it to pubsub as producer
+    3. return true and the data itself, the doc dic
+    """
+
+
 @app.post("/upload_photo", status_code=status.HTTP_201_CREATED)
 async def upload_photo(photofile: UploadFile):
 
@@ -68,7 +121,7 @@ async def upload_photo(photofile: UploadFile):
     # upload the file
     res_up = upload_photo_view(photofile)
 
-    # producer send
+    # producer send to create thumbnail
     real_doc_dict = thumbnail_photo_producer(res_up['id'])
 
     return {
@@ -88,6 +141,8 @@ async def upvote_photo(photo_id: str):
 
     return res_json
 
+# dowvote the photo route
+
 
 @app.get("/downvote/{photo_id}", status_code=status.HTTP_202_ACCEPTED)
 async def downvote_photo(photo_id: str):
@@ -98,6 +153,8 @@ async def downvote_photo(photo_id: str):
     res_json = upvote_downvote(-1, photo_id)
 
     return res_json
+
+# triggler summary
 
 
 @app.get('/trigger_summarizer/{userid_input}')
@@ -112,8 +169,6 @@ async def top_10_photo_day(userid_input: str):
 
 
 # view top 10 photo with the highest rating route in day
-
-
 @app.get('/top_10_photos')
 async def top_10_photo_day():
 
@@ -133,9 +188,8 @@ async def all_photos():
     return res_json
 
 
-# resize the photo with the single click
+# resize the photo with the single click, manual
 @app.get("/photo_resize/{photo_id}")
 async def photo_resize(photo_id):
     res_json = resize_photo(photo_id)
-
     return res_json

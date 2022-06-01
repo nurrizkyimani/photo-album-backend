@@ -21,15 +21,17 @@ def summarization(userid):
         u"==",
         userid)
 
+    # list all of the doc into the list;
     pht_list = []
     real_doc = doc_ref.get()
     for doc in real_doc:
         pht_list.append(doc.id)
 
+    # check if the summarization is exist; if not then create;
     doc_ref_sum = db.collection(u"summarizations").where(
         u"userid",
         u"==",
-        userid).get().exi
+        userid)
 
     d = doc_ref_sum.get()
 
@@ -63,11 +65,14 @@ def resize_photo(photo_id):
     if photo_id == None:
         photo_id = "gpeGwKKB2siJWssDQGko"
 
+    # get the id from uuid for the resize;
     dest_resize_id = "{}.jpeg".format(uuid.uuid1())
 
+    # get the photo from the photo id
     doc_ref = db.collection(u"photos").document(photo_id)
     doc_dict = doc_ref.get().to_dict()
 
+    # open image and make it thumbnail for now;
     image = Image.open(urlopen(doc_dict["url"]))
     image.thumbnail((150, 150))
 
@@ -104,6 +109,8 @@ def resize_photo(photo_id):
 
 
 def upvote_downvote(incr_vote, photo_id):
+
+    # get the doc, in this example is the photo doc with id
     doc_ref = db.collection(u"photos").document(photo_id)
 
     # update the database with the new thumbnail
@@ -126,13 +133,17 @@ def thumbnail_photo_producer(photo_id: int):
     project_id = "genuine-space-349906"
     topic_name = "photo_edit"
 
+    # Create a Publisher Client
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(project_id, topic_name)
 
+    # Publish a message to the topic
     json_ex = json.dumps(real_doc_dict, indent=2).encode('utf-8')
     publisher.publish(topic_path, json_ex)
 
     return real_doc_dict
+
+# get
 
 
 def upload_photo_view(file: UploadFile, userid="23123123"):
@@ -149,6 +160,7 @@ def upload_photo_view(file: UploadFile, userid="23123123"):
     photo_url = "https://storage.googleapis.com/photoalbumsppl/{}".format(
         destination_blob_name)
 
+    # create the model photo
     new_photo = Photo(url=photo_url,
                       vote=0,
                       thumbnail_url=photo_url,

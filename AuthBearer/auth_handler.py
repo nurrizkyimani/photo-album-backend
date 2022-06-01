@@ -11,7 +11,8 @@ JWT_ALGORITHM = "HS256"
 
 def token_response(token: str):
     return {
-        "access_token": token
+        "access_token": token,
+        "message": "Successfully logged in",
     }
 
 
