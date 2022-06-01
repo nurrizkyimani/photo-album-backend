@@ -29,6 +29,8 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
+# app user signup
+
 
 @app.post("/user/signup", tags=["user"])
 async def create_user(user: UserSchema = Body(...)):
@@ -37,6 +39,7 @@ async def create_user(user: UserSchema = Body(...)):
     return signJWT(user.email)
 
 
+# app user login
 @app.post("/user/login", tags=["user"])
 async def user_login(user: UserLoginSchema = Body(...)):
     if check_user(user):
@@ -48,11 +51,12 @@ async def user_login(user: UserLoginSchema = Body(...)):
 # test the bearer
 
 
-@app.post("/test", dependencies=[Depends(JWTBearer())])
+@app.get("/test", dependencies=[Depends(JWTBearer())])
 async def test():
-    return {"message": "Hello World"}
+    return {"message": "Hello World test bearer"}
 
 
+# upload photo
 @app.post("/upload_photo", status_code=status.HTTP_201_CREATED)
 async def upload_photo(photofile: UploadFile):
 

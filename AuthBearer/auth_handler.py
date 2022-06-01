@@ -5,8 +5,8 @@ import jwt
 from decouple import config
 
 
-JWT_SECRET = config("secret")
-JWT_ALGORITHM = config("algorithm")
+JWT_SECRET = "secret_example"
+JWT_ALGORITHM = "HS256"
 
 
 def token_response(token: str):
@@ -27,7 +27,8 @@ def signJWT(user_id: str) -> Dict[str, str]:
 
 def decodeJWT(token: str) -> dict:
     try:
-        decoded_token = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        decoded_token = jwt.decode(
+            token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return decoded_token if decoded_token["expires"] >= time.time() else None
     except:
         return {}
