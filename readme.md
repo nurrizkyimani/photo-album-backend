@@ -1,4 +1,4 @@
-# Photo Album Microservice 
+# Photo Both Microservice 
 
 Develop photo album res api, using gcp, firestore, pubsub, gcp storage
 
